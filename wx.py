@@ -14,23 +14,45 @@ def gnuversion(version1,version2):
         else:return 1
     else:return 1
 class wxrobot:
-    def __init__(self,hass,config:dict,regex:dict):
+    def __init__(self,hass,config:dict,users:dict,regex:dict):
         self.hass=hass
         self.robot = werobot.WeRoBot()
         for k,v in config.items():
             self.robot.config[k]=v
+        self.users=users
         self.regex=regex
         self.robot.config['HOST'] = '0.0.0.0'
+        self.robot.add_handler(self.subscribe, "subscribe_event")
         self.robot.add_handler(self.recv,"text")
         self.robot.add_handler(self.recv, "voice")
     def run(self):
         self.robot.run()
-    def recv(self,message):
-        if message.type == "voice":
-            text = message.recognition
+    def subscribe(self,message,session):
+        session["test"]=0
+        return "请用文字发送你的名字！"
+    def recv(self,message,session):
+        if "block" not in session:
+            if "user" in session:
+                if message.type == "voice":
+                    text = message.recognition
+                else:
+                    text=message.content
+                return self.zhinengjiaju(text)
+            else:
+                try:text = message.content
+                except:return "请使用文字！"
+                if text in self.users:
+                    session["user"]=text
+                    return "认证成功！"
+                else:
+                    if session["test"] == 10:
+                        session["block"]=True
+                        return "您的错误次数达到十次，已被封禁！如需解封请联系管理员！"
+                    else:
+                        session["test"]+=1
+                        return "认证错误！"
         else:
-            text=message.content
-        return self.zhinengjiaju(text)
+            return "您已被封禁！"
     def zhinengjiaju(self,text):
         for r in self.regex["find"]:
             find=re.findall(r,text)
@@ -156,8 +178,8 @@ if __name__ == "__main__":
         if gnuversion(version,a) == 2:
             print("有更新！最新版本："+a)
     finally:
-        with open("configcopy.json",encoding='UTF-8') as f:
+        with open("config.json",encoding='UTF-8') as f:
             config = json.loads(f.read())
         hass=HASS(config["hass"])
-        robot=wxrobot(hass,config["wx"],config["regex"])
+        robot=wxrobot(hass,config["wx"],config["users"],config["regex"])
         robot.run()

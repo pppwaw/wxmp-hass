@@ -1,8 +1,10 @@
 {
+    "users": [],
     "wx": {
         "PORT": 80,
         "TOKEN": "",
         "APP_ID": "",
+        "APP_SECRET": "",
         "ENCODING_AES_KEY": ""
     },
     "regex": {
@@ -31,7 +33,6 @@
         "address": "",
         "token": "",
         "setname": {
-
         }
     }
 }
