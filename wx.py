@@ -1,5 +1,18 @@
-import werobot,json,aip,re
+version='1.0.0'
+import werobot,json,re,requests
 from hassbridge import HASS
+def gnuversion(version1,version2):
+    v1 = version1.split(".")
+    v2 = version2.split(".")
+    if v2[0]>v1[0]:return 2
+    elif v2[0]==v1[0]:
+        if v2[1]>v1[1]:return 2
+        elif v2[1]==v1[1]:
+            if v2[2]>v1[2]:return 2
+            elif v2[2]==v1[2]:return 0
+            else:return 1
+        else:return 1
+    else:return 1
 class wxrobot:
     def __init__(self,hass,config:dict,regex:dict):
         self.hass=hass
@@ -44,7 +57,7 @@ class wxrobot:
         for r in self.regex["on"]:
             find=re.findall(r,text)
             if find:
-                rtn=self.hass.turn_on(list(self.hass.states.keys())[list(self.hass.states.values()).index(find[0])])
+                rtn=self.hass.turn_on(list(self.hass.states.keys())[list(self.hass.states.values()).index(find[0].replace("的",""))])
                 print(rtn)
                 if rtn:
                     return "打开成功！"
@@ -98,8 +111,13 @@ class wxrobot:
                 return "调整失败！"
         return "未知命令！"
 if __name__ == "__main__":
-    with open("config.json",encoding='UTF-8') as f:
-        config = json.loads(f.read())
-    hass=HASS(config["hass"])
-    robot=wxrobot(hass,config["wx"],config["regex"])
-    robot.run()
+    try:
+        a = requests.get("https://raw.githubusercontent.com/pppwaw/wxmp-hass/master/wx.py").text.splitlines()[0].split("=")[1]
+        if gnuversion(version,a) == 2:
+            print("有更新！最新版本："+a)
+    finally:
+        with open("config.json",encoding='UTF-8') as f:
+            config = json.loads(f.read())
+        hass=HASS(config["hass"])
+        robot=wxrobot(hass,config["wx"],config["regex"])
+        robot.run()

@@ -35,10 +35,10 @@ class HASS:
         states = json.loads(requests.get(self.api+"states",headers=self.headers).text)
         for state in states:
             if state["entity_id"] in self.config["setname"].keys():
-                self.states[state["entity_id"]] = self.config["setname"][state["entity_id"]]
+                self.states[state["entity_id"]] = self.config["setname"][state["entity_id"]].replace("的","")
             else:
                 try:
-                    self.states[state["entity_id"]] = state["attributes"]["friendly_name"]
+                    self.states[state["entity_id"]] = state["attributes"]["friendly_name"].replace("的","")
                 except:
                     self.states[state["entity_id"]] = state["entity_id"]
     def turn_on(self,entity_id):
