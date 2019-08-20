@@ -28,8 +28,14 @@ class wxrobot:
     def run(self):
         self.robot.run()
     def subscribe(self,message,session):
-        session["test"]=0
-        return "请用文字发送你的名字！"
+        if "user" not in session:
+            if "block" not in session:
+                session["test"]=0
+                return "请用文字发送你的名字！"
+            else:
+                return "您已被封禁！"
+        else:
+            return "您已认证！"
     def recv(self,message,session):
         if "block" not in session:
             if "user" in session:
@@ -178,7 +184,7 @@ if __name__ == "__main__":
         if gnuversion(version,a) == 2:
             print("有更新！最新版本："+a)
     finally:
-        with open("config.json",encoding='UTF-8') as f:
+        with open("configcopy.json",encoding='UTF-8') as f:
             config = json.loads(f.read())
         hass=HASS(config["hass"])
         robot=wxrobot(hass,config["wx"],config["users"],config["regex"])
