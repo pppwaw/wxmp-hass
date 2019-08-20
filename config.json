@@ -3,7 +3,7 @@
         "PORT": 80,
         "TOKEN": "",
         "APP_ID": "",
-        
+        "ENCODING_AES_KEY": ""
     },
     "regex": {
         "find": [
