@@ -35,10 +35,11 @@ class wxrobot:
         for r in self.regex["find"]:
             find=re.findall(r,text)
             if find:
-                rtn=self.hass.getstate(list(self.hass.states.keys())[list(self.hass.states.values()).index(find[0][0])])
+                rtn=self.hass.getstate(list(self.hass.states.keys())[list(self.hass.states.values()).index(find[0][0].replace("的",""))])
+                domain=rtn["entity_id"].split(".")[0]
                 if rtn:
-                    try:
-                        if find[1] == "状态":
+                    if domain == "climate":
+                        if find[0][1] == "状态":
                             status=rtn["state"]
                             if status=="off":
                                 status="关闭"
@@ -48,11 +49,51 @@ class wxrobot:
                                 status="制冷"
                             elif status=="heat":
                                 status="制热"
-                            return find[0]+"当前状态："+status
-                        elif find[1]=="温度":
-                            return find[0]+"当前为 {} 度".format(rtn["attributes"]["temperature"])
-                    except:
-                        return "查询失败！"
+                            return find[0][0]+"当前状态："+status
+                        elif find[0][1]=="温度":
+                            return find[0][0]+"当前为 {} 度".format(rtn["attributes"]["temperature"])
+                        elif find[0][1]=="模式":
+                            mode=rtn["attributes"]["fan_mode"]
+                            if mode=="auto":
+                                mode="自动"
+                            elif mode=="powerful":
+                                mode="强劲"
+                            elif mode=="sleep":
+                                mode="静音"
+                            return find[0][0]+"当前模式： "+mode
+                        else:
+                            print(rtn)
+                            return "暂未支持！请将服务端的打印信息在github上发布issue！"
+                    elif domain == "switch":
+                        if find[0][1] == "状态":
+                            status = rtn["state"]
+                            if status == "off":
+                                status = "关闭"
+                            elif status == "on":
+                                status = "开启"
+                            return find[0][0] + "当前状态：" + status
+                        else:
+                            print(rtn)
+                            return "暂未支持！请将服务端的打印信息在github上发布issue！"
+                    elif domain == "light":
+                        if find[0][1] == "状态":
+                            status = rtn["state"]
+                            if status == "off":
+                                status = "关闭"
+                            elif status == "on":
+                                status = "开启"
+                            return find[0][0] + "当前状态：" + status
+                        elif find[0][1] == "亮度":
+                            light=rtn['attributes']['brightness']
+                            light=int(light/255)*100
+                            return find[0][0] + "当前亮度：" + str(light) + "%"
+                        else:
+                            print(rtn)
+                            return "暂未支持！请将服务端的打印信息在github上发布issue！"
+
+                    else:
+                        print(rtn)
+                        return "暂未支持！请将服务端的打印信息在github上发布issue！"
                 return "查询失败！"
         for r in self.regex["on"]:
             find=re.findall(r,text)
@@ -116,7 +157,7 @@ if __name__ == "__main__":
         if gnuversion(version,a) == 2:
             print("有更新！最新版本："+a)
     finally:
-        with open("config.json",encoding='UTF-8') as f:
+        with open("configcopy.json",encoding='UTF-8') as f:
             config = json.loads(f.read())
         hass=HASS(config["hass"])
         robot=wxrobot(hass,config["wx"],config["regex"])
