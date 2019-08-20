@@ -90,7 +90,6 @@ class wxrobot:
                         else:
                             print(rtn)
                             return "暂未支持！请将服务端的打印信息在github上发布issue！"
-
                     else:
                         print(rtn)
                         return "暂未支持！请将服务端的打印信息在github上发布issue！"
