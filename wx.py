@@ -1,6 +1,6 @@
-version='1.0.0'
-import werobot,json,re,requests
-from hassbridge import HASS
+version='1.0.2'
+import werobot,json,re,requests,aip,base64
+from hassbridge import *
 def gnuversion(version1,version2):
     v1 = version1.split(".")
     v2 = version2.split(".")
@@ -14,8 +14,11 @@ def gnuversion(version1,version2):
         else:return 1
     else:return 1
 class wxrobot:
-    def __init__(self,hass,config:dict,users:dict,regex:dict):
+    def __init__(self,hass,face:dict,config:dict,users:dict,regex:dict):
         self.hass=hass
+        self.face=aip.AipFace(str(face["appId"]),face["apiKey"],face["secretKey"])
+        if self.face.getGroupUsers("werobot")["error_code"] != 0:
+            raise AuthenticationError("人脸识别认证错误！")
         self.robot = werobot.WeRoBot()
         for k,v in config.items():
             self.robot.config[k]=v
@@ -25,6 +28,7 @@ class wxrobot:
         self.robot.add_handler(self.subscribe, "subscribe_event")
         self.robot.add_handler(self.recv,"text")
         self.robot.add_handler(self.recv, "voice")
+        self.robot.add_handler(self.recv, "image")
     def run(self):
         self.robot.run()
     def subscribe(self,message,session):
@@ -39,26 +43,45 @@ class wxrobot:
     def recv(self,message,session):
         if "block" not in session:
             if "user" in session:
-                if message.type == "voice":
-                    text = message.recognition
+                if "face" in session:
+                    if message.type == "voice": text = message.recognition
+                    elif message.type == "text": text=message.content
+                    else:return "不支持图片！"
+                    text.replace("跳", "调")
+                    return self.zhinengjiaju(text)
                 else:
-                    text=message.content
-                return self.zhinengjiaju(text)
+                    if message.type == "image":
+                        img=requests.get(message.img).content
+
+                        face=self.face.search(base64.b64encode(img).decode(),"BASE64","werobot",{"user_id":self.users[session["user"]]})
+                        if face["error_code"] == 0:
+                            if face['result']["user_list"][0]["score"] >= 80:
+                                session["face"]=self.users[session["user"]]
+                                return "人脸验证成功！"
+                            else:
+                                if session["test"] == 20:
+                                    del session["user"]
+                                    return "您的不匹配次数达到二十次，已经自动清除名字！请发送你的名字！"
+                                else:
+                                    session["test"]+=1
+                                    return "人脸不匹配！"
+                        else:return "未发现人脸！"
+                    else:return "请发送照片！"
             else:
-                try:text = message.content
-                except:return "请使用文字！"
-                if text in self.users:
+                try: text = message.content
+                except: return "请使用文字！"
+                if text in self.users.keys():
+                    session["test"]=0
                     session["user"]=text
-                    return "认证成功！"
+                    return "请发送照片！"
                 else:
                     if session["test"] == 10:
                         session["block"]=True
                         return "您的错误次数达到十次，已被封禁！如需解封请联系管理员！"
                     else:
                         session["test"]+=1
-                        return "认证错误！"
-        else:
-            return "您已被封禁！"
+                        return "名字错误！"
+        else:return "您已被封禁！"
     def zhinengjiaju(self,text):
         for r in self.regex["find"]:
             find=re.findall(r,text)
@@ -126,7 +149,6 @@ class wxrobot:
             find=re.findall(r,text)
             if find:
                 rtn=self.hass.turn_on(list(self.hass.states.keys())[list(self.hass.states.values()).index(find[0].replace("的",""))])
-                print(rtn)
                 if rtn:
                     return "打开成功！"
                 return "打开失败！"
@@ -134,7 +156,6 @@ class wxrobot:
             find = re.findall(r, text)
             if find:
                 rtn=self.hass.turn_off(list(self.hass.states.keys())[list(self.hass.states.values()).index(find[0].replace("的",""))])
-                print(rtn)
                 if rtn:
                     return "关闭成功！"
                 return "关闭失败"
@@ -143,7 +164,7 @@ class wxrobot:
             if find:
                 find=find[0]
                 entity_id=list(self.hass.states.keys())[list(self.hass.states.values()).index(find[0])]
-                state=self.hass.getstate(entity_id)
+                #state=self.hass.getstate(entity_id)
                 data = {"entity_id": entity_id}
                 try:
                     if find[0].split("的")[-1] == "空调":
@@ -167,13 +188,13 @@ class wxrobot:
                             mode = re.findall("(静音|强力|自动)", find[2])[0]
                             if mode == "静音":
                                 data["fan_mode"]="sleep"
-                            elif mode == "强力":
+                            elif mode == "强力" or mode == "强劲":
                                 data["fan_mode"]="powerful"
                             else:
                                 data["fan_mode"]="auto"
                 except Exception as e:print(e);return "调整失败！"
                 rtn=self.hass.setstate(domain,service,data)
-                print(rtn)
+
                 if rtn:
                     return "调整成功！"
                 return "调整失败！"
@@ -184,8 +205,8 @@ if __name__ == "__main__":
         if gnuversion(version,a) == 2:
             print("有更新！最新版本："+a)
     finally:
-        with open("configcopy.json",encoding='UTF-8') as f:
+        with open("config.json",encoding='UTF-8') as f:
             config = json.loads(f.read())
         hass=HASS(config["hass"])
-        robot=wxrobot(hass,config["wx"],config["users"],config["regex"])
+        robot=wxrobot(hass,config["face"],config["wx"],config["users"],config["regex"])
         robot.run()

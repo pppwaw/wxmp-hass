@@ -1,7 +1,12 @@
 {
-    "users": [
+    "users": {
 
-    ],
+    },
+    "face": {
+        "appId": "",
+        "apiKey": "",
+        "secretKey": ""
+    },
     "wx": {
         "PORT": 80,
         "TOKEN": "",
@@ -35,6 +40,23 @@
         "address": "",
         "token": "",
         "setname": {
+            "sun.sun": "Sun",
+            "climate.ke_ting_de_kong_diao_2": "空调",
+            "binary_sensor.ke_ting_de_deng_nightlight": "客厅灯 nightlight",
+            "light.ke_ting_de_deng": "客厅灯",
+            "group.all_lights": "所有灯",
+            "media_player.mpd": "MPD",
+            "switch.server": "服务器",
+            "group.all_switches": "所有控制",
+            "switch.jidinghe": "机顶盒",
+            "switch.tv": "电视",
+            "binary_sensor.motion_sensor_158d0000fa2ed2": "移动",
+            "binary_sensor.door_window_sensor_158d0001026e2c": "门",
+            "sensor.illumination_f0b4299a8dcd": "亮度",
+            "light.gateway_light_f0b4299a8dcd": "网关灯",
+            "weather.jia": "天气",
+            "persistent_notification.config_entry_discovery": "persistent_notification.config_entry_discovery",
+            "media_player.xiao_du_zhi_neng_yin_xiang_4465_3": "小度智能音箱-4465"
         }
     }
 }
